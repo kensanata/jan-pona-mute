@@ -15,7 +15,9 @@
 # with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import diaspy
+import subprocess
 import argparse
+import shutil
 import cmd
 import sys
 import os
@@ -23,12 +25,19 @@ import os
 # Command abbreviations
 _ABBREVS = {
     "q":    "quit",
+    "p":    "print",
 }
 
 _RC_PATHS = (
     "~/.config/jan-pona-mute/login",
     "~/.config/.jan-pona-mute",
     "~/.jan-pona-mute"
+)
+
+_PAGERS = (
+    "mdcat",
+    "fold",
+    "cat"
 )
 
 # Init file finder
@@ -39,18 +48,27 @@ def get_rcfile():
             return rcfile
     return None
 
+# Pager finder
+def get_pager():
+    for cmd in _PAGERS:
+        pager = shutil.which(cmd)
+        if pager != None:
+            return pager
+
 class DiasporaClient(cmd.Cmd):
 
     prompt = "\x1b[38;5;255m" + "> " + "\x1b[0m"
-    intro = "Welcome to Diaspora!"
+    intro = "Welcome to Diaspora! Use the intro command for a quick introduction."
 
     username = None
     pod = None
     password = None
+    pager = None
 
     connection = None
     things = []
     index = None
+    thing = None
 
     # dict mapping user ids to usernames
     users = {}
@@ -62,6 +80,16 @@ class DiasporaClient(cmd.Cmd):
             user = diaspy.people.User(connection = self.connection, guid = guid)
             self.users[guid] = user.handle()
             return self.users[guid]
+
+    def do_intro(self, line):
+        print("""
+Use the account and password commands to set up your connection, then
+use the login command to log in. If everything works as intended, use
+the save command to save these commands to an init file.
+
+Once you've listed things such as notifications, enter a number to
+select the corresponding item. Use the print command to see more.
+""")
 
     def do_account(self, account):
         """Set username and pod using the format username@pod."""
@@ -78,6 +106,7 @@ class DiasporaClient(cmd.Cmd):
         print("Username: %s" % self.username)
         print("Password: %s" % ("None" if self.password == None else "set"))
         print("Pod:      %s" % self.pod)
+        print("Pager:    %s" % self.pager)
 
     def do_password(self, password):
         """Set the password."""
@@ -159,6 +188,11 @@ class DiasporaClient(cmd.Cmd):
             except diaspy.errors.LoginError:
                 print("Login failed")
 
+    def do_pager(self, pager):
+        """Set the pager, e.g. to cat"""
+        self.pager = pager
+        print("Pager set: %s" % self.pager)
+
     def do_notifications(self, line):
         """List notifications."""
         if self.connection == None:
@@ -167,6 +201,7 @@ class DiasporaClient(cmd.Cmd):
         self.things = diaspy.notifications.Notifications(self.connection).last()
         for n, notification in enumerate(self.things):
             print("%2d. %s %s" % (n+1, notification.when(), notification))
+        print("Enter a number to select the notification.")
 
     ### The end!
     def do_quit(self, *args):
@@ -195,15 +230,40 @@ class DiasporaClient(cmd.Cmd):
         try:
             item = self.things[n-1]
         except IndexError:
-            print ("Index too high!")
+            print("Index too high!")
             return
 
+        self.thing = item
         self.index = n
         self.show(item)
 
     def show(self, item):
         """Show the current item."""
-        print (str(item))
+        if self.pager:
+            subprocess.run(self.pager, input = repr(item), text = True)
+        else:
+            print(repr(item))
+
+    def do_print(self, line):
+        """Print more about the current item, or the item at the index given."""
+        n = self.index
+        if line != "":
+            try:
+                n = int(line.strip())
+            except ValueError:
+                print("The print argument takes an index as its argument")
+                return
+        if n == None:
+            print("Select an item by entering it's number")
+        try:
+            item = self.things[n-1]
+            self.index = n
+        except IndexError:
+            print("Index too high!")
+            return
+
+        item = diaspy.models.Post(connection = self.connection, id = item.about())
+        self.show(item)
 
 # Main function
 def main():
@@ -218,6 +278,7 @@ def main():
     c = DiasporaClient()
 
     # Process init file
+    seen_pager = False
     if args.init_file:
         rcfile = get_rcfile()
         if rcfile:
@@ -225,9 +286,16 @@ def main():
             with open(rcfile, "r") as fp:
                 for line in fp:
                     line = line.strip()
-                    c.cmdqueue.append(line)
+                    if line != "":
+                        c.cmdqueue.append(line)
+                    if not seen_pager:
+                        seen_pager = line.startswith("pager ");
         else:
             print("Use the save command to save your login sequence to an init file")
+
+    if not seen_pager:
+        # prepend
+        c.cmdqueue.insert(0, "pager %s" % get_pager())
 
     # Endless interpret loop
     while True:
