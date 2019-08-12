@@ -66,9 +66,9 @@ class DiasporaClient(cmd.Cmd):
     pager = None
 
     connection = None
-    things = []
+    notifications = []
     index = None
-    thing = None
+    post = None
 
     # dict mapping user ids to usernames
     users = {}
@@ -198,8 +198,8 @@ select the corresponding item. Use the print command to see more.
         if self.connection == None:
             print("Use the login command, first.")
             return
-        self.things = diaspy.notifications.Notifications(self.connection).last()
-        for n, notification in enumerate(self.things):
+        self.notifications = diaspy.notifications.Notifications(self.connection).last()
+        for n, notification in enumerate(self.notifications):
             print("%2d. %s %s" % (n+1, notification.when(), notification))
         print("Enter a number to select the notification.")
 
@@ -220,22 +220,30 @@ select the corresponding item. Use the print command to see more.
             expanded = line.replace(first_word, full_cmd, 1)
             return self.onecmd(expanded)
 
-        # Try to parse numerical index for lookup table
         try:
             n = int(line.strip())
+            # Finally, see if it's a notification and show it
+            self.do_show(n)
         except ValueError:
-            print("Use the help command")
-            return
+            print("Use the help command to show available commands")
 
+    def do_show(self, n):
+        """Show the post given by the index number.
+The index number must refer to the current list of notifications."""
         try:
-            item = self.things[n-1]
+            notification = self.notifications[n-1]
+            self.index = n
         except IndexError:
             print("Index too high!")
             return
 
-        self.thing = item
-        self.index = n
-        self.show(item)
+        self.show(notification)
+
+        print("Loading...")
+        self.post = diaspy.models.Post(connection = self.connection, id = notification.about())
+
+        print()
+        self.show(self.post)
 
     def show(self, item):
         """Show the current item."""
@@ -244,26 +252,36 @@ select the corresponding item. Use the print command to see more.
         else:
             print(repr(item))
 
-    def do_print(self, line):
-        """Print more about the current item, or the item at the index given."""
-        n = self.index
-        if line != "":
+    def do_comments(self, line):
+        """Show the comments for the current post."""
+        if self.post == None:
+            print("Use the show command to show a post, first.")
+            return
+        if self.post.comments == None:
+            print("The current post has no comments.")
+            return
+
+        n = 5
+        comments = self.post.comments
+
+        if line == "all":
+            n = None
+        elif line != "":
             try:
                 n = int(line.strip())
             except ValueError:
-                print("The print argument takes an index as its argument")
+                print("The comments command takes a number as its argument, or 'all'")
+                print("The default is to show the last 5 comments")
                 return
-        if n == None:
-            print("Select an item by entering it's number")
-        try:
-            item = self.things[n-1]
-            self.index = n
-        except IndexError:
-            print("Index too high!")
-            return
 
-        item = diaspy.models.Post(connection = self.connection, id = item.about())
-        self.show(item)
+        if n != None:
+            comments = comments[-n:]
+
+        for n, comment in enumerate(comments):
+            print()
+            print("%2d. %s %s" % (n+1, comment.when(), comment.author()))
+            print()
+            self.show(comment)
 
 # Main function
 def main():
