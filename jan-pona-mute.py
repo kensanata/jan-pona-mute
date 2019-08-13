@@ -26,6 +26,7 @@ import os
 _ABBREVS = {
     "q":    "quit",
     "p":    "print",
+    "c":    "comments",
 }
 
 _RC_PATHS = (
