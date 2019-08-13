@@ -60,6 +60,8 @@ class DiasporaClient(cmd.Cmd):
     prompt = "\x1b[38;5;255m" + "> " + "\x1b[0m"
     intro = "Welcome to Diaspora! Use the intro command for a quick introduction."
 
+    header_format = "\x1b[1;38;5;255m" + "%s" + "\x1b[0m"
+
     username = None
     pod = None
     password = None
@@ -193,6 +195,10 @@ select the corresponding item. Use the print command to see more.
         self.pager = pager
         print("Pager set: %s" % self.pager)
 
+    def header(self, line):
+        """Wrap line in header format."""
+        return self.header_format % line
+
     def do_notifications(self, line):
         """List notifications."""
         if self.connection == None:
@@ -200,7 +206,7 @@ select the corresponding item. Use the print command to see more.
             return
         self.notifications = diaspy.notifications.Notifications(self.connection).last()
         for n, notification in enumerate(self.notifications):
-            print("%2d. %s %s" % (n+1, notification.when(), notification))
+            print(self.header("%2d. %s %s") % (n+1, notification.when(), notification))
         print("Enter a number to select the notification.")
 
     ### The end!
@@ -279,7 +285,7 @@ The index number must refer to the current list of notifications."""
 
         for n, comment in enumerate(comments):
             print()
-            print("%2d. %s %s" % (n+1, comment.when(), comment.author()))
+            print(self.header("%2d. %s %s") % (n+1, comment.when(), comment.author()))
             print()
             self.show(comment)
 
