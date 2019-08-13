@@ -72,6 +72,8 @@ class DiasporaClient(cmd.Cmd):
     notifications = []
     index = None
     post = None
+    post_cache = {} # key is self.post.uid
+
     undo = []
 
 
@@ -252,6 +254,7 @@ The index number must refer to the current list of notifications."""
 
         print("Loading...")
         self.post = diaspy.models.Post(connection = self.connection, id = notification.about())
+        self.post_cache[self.post.guid] = self.post
 
         print()
         self.show(self.post)
@@ -303,6 +306,36 @@ The index number must refer to the current list of notifications."""
         self.post.comments.add(comment)
         self.undo.append("delete comment %s from %s" % (comment.id, self.post.guid))
         print("Comment posted.")
+
+    def do_delete(self, line):
+        """Delete a comment."""
+        words = line.strip().split()
+        if words:
+            if words[0] == "comment":
+                if self.post == None:
+                    print("Use the show command to show a post, first.")
+                    return
+                if len(words) != 4:
+                    print("Deleting a comment requires a comment id and a post guid.")
+                    print("delete comment <id> from <guid>")
+                    return
+                self.post_cache[words[3]].delete_comment(words[1])
+                print("Comment deleted.")
+            else:
+                print("Deleting '%s' is not supported." % words[0])
+                return
+        else:
+            print("Delete what?")
+
+    def do_undo(self, line):
+        """Undo an action."""
+        if line != "":
+            print("Undo does not take an argument.")
+            return
+        if not self.undo:
+            print("There is nothing to undo.")
+            return
+        return self.onecmd(self.undo.pop())
 
 # Main function
 def main():
