@@ -16,12 +16,16 @@ It's *very* limited but it's helping me get started using the
 Installation
 ------------
 
-We need the [https://github.com/marekjm/diaspy diaspy] library. Use
-`pip` to install it.
+We need the [https://github.com/marekjm/diaspy diaspy] library.
 
 ```
-$ pip3 install diaspy
+$ git clone https://github.com/marekjm/diaspy.git
+$ cd diaspy
+$ pip3 install .
 ```
+
+This gives me version 0.6.0. when I use `pip3 install diaspy` I get
+version 0.3.0 which doesn't work.
 
 Quickstart
 ==========
