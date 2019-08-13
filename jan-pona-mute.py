@@ -291,11 +291,14 @@ The index number must refer to the current list of notifications."""
         if n != None:
             comments = comments[-n:]
 
-        for n, comment in enumerate(comments):
-            print()
-            print(self.header("%2d. %s %s") % (n+1, comment.when(), comment.author()))
-            print()
-            self.show(comment)
+        if comments:
+            for n, comment in enumerate(comments):
+                print()
+                print(self.header("%2d. %s %s") % (n+1, comment.when(), comment.author()))
+                print()
+                self.show(comment)
+        else:
+            print("There are no comments on the selected post.")
 
     def do_comment(self, line):
         """Leave a comment on the current post."""
