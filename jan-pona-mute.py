@@ -72,6 +72,8 @@ class DiasporaClient(cmd.Cmd):
     notifications = []
     index = None
     post = None
+    undo = []
+
 
     # dict mapping user ids to usernames
     users = {}
@@ -291,6 +293,16 @@ The index number must refer to the current list of notifications."""
             print(self.header("%2d. %s %s") % (n+1, comment.when(), comment.author()))
             print()
             self.show(comment)
+
+    def do_comment(self, line):
+        """Leave a comment on the current post."""
+        if self.post == None:
+            print("Use the show command to show a post, first.")
+            return
+        comment = self.post.comment(line)
+        self.post.comments.add(comment)
+        self.undo.append("delete comment %s from %s" % (comment.id, self.post.guid))
+        print("Comment posted.")
 
 # Main function
 def main():
