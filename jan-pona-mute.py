@@ -27,6 +27,8 @@ _ABBREVS = {
     "q":    "quit",
     "p":    "print",
     "c":    "comments",
+    "r":    "reload",
+    "n":    "notifications",
 }
 
 _RC_PATHS = (
@@ -72,7 +74,7 @@ class DiasporaClient(cmd.Cmd):
     notifications = []
     index = None
     post = None
-    post_cache = {} # key is self.post.uid
+    post_cache = {} # key is self.post.uid, and notification.id
 
     undo = []
 
@@ -91,12 +93,13 @@ class DiasporaClient(cmd.Cmd):
     def do_intro(self, line):
         """Start here."""
         print("""
-Use the account and password commands to set up your connection, then
-use the login command to log in. If everything works as intended, use
-the save command to save these commands to an init file.
+Use the 'account' and 'password' commands to set up your connection,
+then use the 'login' command to log in. If everything works as
+intended, use the 'save' command to save these commands to an init
+file.
 
 Once you've listed things such as notifications, enter a number to
-select the corresponding item. Use the print command to see more.
+select the corresponding item.
 """)
 
     def do_account(self, account):
@@ -124,9 +127,9 @@ select the corresponding item. Use the print command to see more.
     def do_save(self, line):
         """Save your login information to the init file."""
         if self.username == None or self.pod == None:
-            print("Use the account command to set username and pod")
+            print("Use the 'account' command to set username and pod")
         elif self.password == None:
-            print("Use the password command")
+            print("Use the 'password' command")
         else:
             rcfile = get_rcfile()
             if rcfile == None:
@@ -185,9 +188,9 @@ select the corresponding item. Use the print command to see more.
         if line != "":
             self.onecmd("account %s" % line)
         if self.username == None or self.pod == None:
-            print("Use the account command to set username and pod")
+            print("Use the 'account' command to set username and pod")
         elif self.password == None:
-            print("Use the password command")
+            print("Use the 'password' command")
         else:
             self.connection = diaspy.connection.Connection(
                 pod = "https://%s" % self.pod, username = self.username, password = self.password)
@@ -207,14 +210,21 @@ select the corresponding item. Use the print command to see more.
         return self.header_format % line
 
     def do_notifications(self, line):
-        """List notifications."""
-        if self.connection == None:
-            print("Use the login command, first.")
-            return
-        self.notifications = diaspy.notifications.Notifications(self.connection).last()
-        for n, notification in enumerate(self.notifications):
-            print(self.header("%2d. %s %s") % (n+1, notification.when(), notification))
-        print("Enter a number to select the notification.")
+        """List notifications. Use 'notifications reload' to reload them."""
+        if line == "" and self.notifications:
+            print("Redisplaying the notifications in the cache.")
+            print("Use the 'reload' argument to reload them.")
+        elif line == "reload" or not self.notifications:
+            if self.connection == None:
+                print("Use the 'login' command, first.")
+                return
+            self.notifications = diaspy.notifications.Notifications(self.connection).last()
+        if self.notifications:
+            for n, notification in enumerate(self.notifications):
+                print(self.header("%2d. %s %s") % (n+1, notification.when(), notification))
+            print("Enter a number to select the notification.")
+        else:
+            print("There are no notifications. 😢")
 
     ### The end!
     def do_quit(self, *args):
@@ -233,31 +243,60 @@ select the corresponding item. Use the print command to see more.
             expanded = line.replace(first_word, full_cmd, 1)
             return self.onecmd(expanded)
 
-        try:
-            n = int(line.strip())
-            # Finally, see if it's a notification and show it
-            self.do_show(n)
-        except ValueError:
-            print("Use the help command to show available commands")
+        # Finally, see if it's a notification and show it
+        self.do_show(line)
 
-    def do_show(self, n):
+    def do_show(self, line):
         """Show the post given by the index number.
 The index number must refer to the current list of notifications."""
+        if not self.notifications:
+            print("No notifications were loaded.")
+            return
+        if line == "":
+            print("The 'show' command takes a notification number")
+            return
         try:
+            n = int(line.strip())
             notification = self.notifications[n-1]
             self.index = n
+        except ValueError:
+            print("The 'show' command takes a notification number but '%s' is not a number" % line)
+            return
         except IndexError:
             print("Index too high!")
             return
 
         self.show(notification)
-
-        print("Loading...")
-        self.post = diaspy.models.Post(connection = self.connection, id = notification.about())
-        self.post_cache[self.post.guid] = self.post
+        self.load(notification.about())
 
         print()
         self.show(self.post)
+
+        if(self.post.comments):
+            print()
+            print("There are %d comments." % self.post.comments.length())
+            print("Use the 'comments' command to list the latest comments.")
+
+    def load(self, id):
+        """Load the post belonging to the id (from a notification),
+or get it from the cache."""
+        if id in self.post_cache:
+            self.post = self.post_cache[id]
+            print("Retrieved post from the cache")
+        else:
+            print("Loading...")
+            self.post = diaspy.models.Post(connection = self.connection, id = id)
+            self.post_cache[id] = self.post
+        return self.post
+
+    def do_reload(self, line):
+        """Reload the current post."""
+        if self.post == None:
+            print("Use the 'show' command to show a post, first.")
+            return
+        print("Reloading...")
+        self.post = diaspy.models.Post(connection = self.connection, id = self.post.id)
+        self.post_cache[id] = self.post
 
     def show(self, item):
         """Show the current item."""
@@ -267,9 +306,11 @@ The index number must refer to the current list of notifications."""
             print(repr(item))
 
     def do_comments(self, line):
-        """Show the comments for the current post."""
+        """Show the comments for the current post.
+Use the 'all' argument to show them all. Use a numerical argument to
+show that many. The default is to load the last five."""
         if self.post == None:
-            print("Use the show command to show a post, first.")
+            print("Use the 'show' command to show a post, first.")
             return
         if self.post.comments == None:
             print("The current post has no comments.")
@@ -284,7 +325,7 @@ The index number must refer to the current list of notifications."""
             try:
                 n = int(line.strip())
             except ValueError:
-                print("The comments command takes a number as its argument, or 'all'")
+                print("The 'comments' command takes a number as its argument, or 'all'")
                 print("The default is to show the last 5 comments")
                 return
 
@@ -303,11 +344,11 @@ The index number must refer to the current list of notifications."""
     def do_comment(self, line):
         """Leave a comment on the current post."""
         if self.post == None:
-            print("Use the show command to show a post, first.")
+            print("Use the 'show' command to show a post, first.")
             return
         comment = self.post.comment(line)
         self.post.comments.add(comment)
-        self.undo.append("delete comment %s from %s" % (comment.id, self.post.guid))
+        self.undo.append("delete comment %s from %s" % (comment.id, self.id))
         print("Comment posted.")
 
     def do_delete(self, line):
@@ -316,11 +357,11 @@ The index number must refer to the current list of notifications."""
         if words:
             if words[0] == "comment":
                 if self.post == None:
-                    print("Use the show command to show a post, first.")
+                    print("Use the 'show' command to show a post, first.")
                     return
                 if len(words) != 4:
-                    print("Deleting a comment requires a comment id and a post guid.")
-                    print("delete comment <id> from <guid>")
+                    print("Deleting a comment requires a comment id and a post id.")
+                    print("delete comment <comment id> from <post id>")
                     return
                 self.post_cache[words[3]].delete_comment(words[1])
                 print("Comment deleted.")
@@ -366,7 +407,7 @@ def main():
                     if not seen_pager:
                         seen_pager = line.startswith("pager ");
         else:
-            print("Use the save command to save your login sequence to an init file")
+            print("Use the 'save' command to save your login sequence to an init file")
 
     if not seen_pager:
         # prepend
