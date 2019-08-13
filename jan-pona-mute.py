@@ -84,6 +84,7 @@ class DiasporaClient(cmd.Cmd):
             return self.users[guid]
 
     def do_intro(self, line):
+        """Start here."""
         print("""
 Use the account and password commands to set up your connection, then
 use the login command to log in. If everything works as intended, use
@@ -116,6 +117,7 @@ select the corresponding item. Use the print command to see more.
         print("Password %s" % ("unset" if self.password == "" else "set"))
 
     def do_save(self, line):
+        """Save your login information to the init file."""
         if self.username == None or self.pod == None:
             print("Use the account command to set username and pod")
         elif self.password == None:
