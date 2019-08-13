@@ -12,3 +12,75 @@ deal with my specific use-cases:
 
 It's *very* limited but it's helping me get started using the
 [https://github.com/marekjm/diaspy diaspy] Python library.
+
+Installation
+------------
+
+We need the [https://github.com/marekjm/diaspy diaspy] library. Use
+`pip` to install it.
+
+```
+$ pip3 install diaspy
+```
+
+Quickstart
+==========
+
+```
+$ python3 jan-pona-mute.py
+Welcome to Diaspora! Use the intro command for a quick introduction.
+Pager set: /usr/bin/fold
+> account kensanata@pluspora.com
+Username and pod set: kensanata@pluspora.com
+> password *secret*
+Password set
+> login
+ 1. 2019-08-13T19:40:17.000Z Joe Doe has liked your post I've started writing...
+ 2. 2019-08-13T17:59:23.000Z Joe Doe commented on your post Please help me wi...
+ 3. 2019-08-13T17:03:45.000Z Jane Doe has liked your post I've started writin...
+ 4. 2019-08-13T15:02:50.000Z June Doe commented on your post I don't like Mon...
+ 5. 2019-08-13T14:48:51.000Z John Doe liked your post Monday again! What am I...
+Enter a number to select the notification.
+> 1
+2019-08-13T19:40:17.000Z Joe Doe has liked your post I've started writing...
+Loading...
+
+I've started writing a Diaspora client for the command line. It's called Jan Pona
+Mute which means as much as "many friends" in English. It's written in Python and
+doesn't do much.
+> comments
+There are no comments on the selected post.
+> comment This is me leaving a comment.
+Comment posted
+> comments
+
+ 1. 2019-08-13T20:04:35.000Z Alex Schroeder
+
+Alex Schroeder (e3bd7110b2ee013620f200505608f9fe): This is me leaving a comment.
+> quit
+Be safe!
+```
+
+Next Step
+---------
+
+Use the `save` command to save the login information (including the
+password!) to an init file.
+
+The init files searched are:
+
+1. `~/.config/jan-pona-mute/login`
+2. `~/.config/.jan-pona-mute`
+3. `~/.jan-pona-mute`
+
+If one of them exists while starting up, that's the file that gets
+written. If none exists, the first one is going to be created by the
+`save` command.
+
+Any further commands you put into the file are simple executed as if
+you were to type them every time you start the program.
+
+Reference
+---------
+
+So much is still in flux. Please use the `help` command to learn more.
