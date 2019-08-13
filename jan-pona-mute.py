@@ -274,7 +274,10 @@ The index number must refer to the current list of notifications."""
 
         if(self.post.comments):
             print()
-            print("There are %d comments." % self.post.comments.length())
+            if len(self.post.comments) == 1:
+                print("There is 1 comment.")
+            else:
+                print("There are %d comments." % len(self.post.comments))
             print("Use the 'comments' command to list the latest comments.")
 
     def load(self, id):
@@ -301,9 +304,9 @@ or get it from the cache."""
     def show(self, item):
         """Show the current item."""
         if self.pager:
-            subprocess.run(self.pager, input = repr(item), text = True)
+            subprocess.run(self.pager, input = str(item), text = True)
         else:
-            print(repr(item))
+            print(str(item))
 
     def do_comments(self, line):
         """Show the comments for the current post.
