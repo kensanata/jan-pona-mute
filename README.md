@@ -74,7 +74,7 @@ password!) to an init file.
 The init files searched are:
 
 1. `~/.config/jan-pona-mute/login`
-2. `~/.config/.jan-pona-mute`
+2. `~/.jan-pona-mute.d/login`
 3. `~/.jan-pona-mute`
 
 If one of them exists while starting up, that's the file that gets
