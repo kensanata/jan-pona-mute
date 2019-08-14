@@ -18,7 +18,7 @@ Installation
 
 We need the [https://github.com/marekjm/diaspy diaspy] library.
 
-```
+```text
 $ git clone https://github.com/marekjm/diaspy.git
 $ cd diaspy
 $ pip3 install .
@@ -30,7 +30,7 @@ version 0.3.0 which doesn't work.
 Quickstart
 ==========
 
-```
+```text
 $ python3 jan-pona-mute.py
 Welcome to Diaspora! Use the intro command for a quick introduction.
 Pager set: /usr/bin/fold
@@ -100,7 +100,7 @@ renders Markdown. Here's the workflow:
 
 This is what it looks like, assuming your editor is `ed`:
 
-```
+```text
 > notifications
 ...
 > 1
