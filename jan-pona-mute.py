@@ -25,11 +25,12 @@ import os
 # Command abbreviations
 _ABBREVS = {
     "q":    "quit",
-    "p":    "print",
+    "p":    "preview",
     "c":    "comments",
     "r":    "reload",
     "n":    "notifications",
     "e":    "edit",
+    "d":    "delete",
 }
 
 _RC_PATHS = (
@@ -531,6 +532,29 @@ Use the 'edit' command to edit notes."""
         """Get text of a note."""
         with open(self.get_note_path(filename), mode = 'r', encoding = 'utf-8') as fp:
             return fp.read()
+
+    def do_preview(self, line):
+        """Preview a note using your pager.
+Use the 'pager' command to set your pager to something like 'mdcat'."""
+        if line == "":
+            print("The 'preview' command the number of a note as an argument.")
+            print("Use the 'notes' command to list all your notes.")
+            return
+        try:
+            n = int(line.strip())
+            notes = self.get_notes()
+            if notes:
+                try:
+                    self.show(self.read_note(notes[n-1]))
+                except IndexError:
+                    print("Use the 'list notes' command to list valid numbers.")
+                    return
+            else:
+                print("There are no notes to preview.")
+                return
+        except ValueError:
+            print("The 'preview' command takes a number as its argument.")
+            return
 
 # Main function
 def main():
