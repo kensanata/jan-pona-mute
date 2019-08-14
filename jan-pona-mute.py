@@ -400,12 +400,13 @@ Use the 'edit' command to edit notes."""
             print("Use the 'show' command to show a post, first.")
             return
         try:
+            # if the comment is just a number, use a note to post
             n = int(line.strip())
             notes = self.get_notes()
             if notes:
                 try:
                     with open(self.get_note_path(notes[n-1]), mode = 'r', encoding = 'utf-8') as fp:
-                        comment = fp.read()
+                        line = fp.read()
                     print("Using note #%d: %s" % (n, notes[n-1]))
                 except IndexError:
                     print("Use the 'list notes' command to list valid numbers.")
@@ -414,7 +415,8 @@ Use the 'edit' command to edit notes."""
                 print("There are no notes to use.")
                 return
         except ValueError:
-            comment = line
+            # in which case we'll simply comment with the line
+            pass
         comment = self.post.comment(line)
         self.post.comments.add(comment)
         self.undo.append("delete comment %s from %s" % (comment.id, self.post.id))
