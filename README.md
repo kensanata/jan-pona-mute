@@ -11,12 +11,12 @@ deal with my specific use-cases:
 - I want to delete comments I left by mistake
 
 It's *very* limited but it's helping me get started using the
-[https://github.com/marekjm/diaspy diaspy] Python library.
+[diaspy](https://github.com/marekjm/diaspy) Python library.
 
 Installation
 ------------
 
-We need the [https://github.com/marekjm/diaspy diaspy] library.
+We need the [diaspy](https://github.com/marekjm/diaspy) library.
 
 ```text
 $ git clone https://github.com/marekjm/diaspy.git
@@ -24,8 +24,8 @@ $ cd diaspy
 $ pip3 install .
 ```
 
-This gives me version 0.6.0. when I use `pip3 install diaspy` I get
-version 0.3.0 which doesn't work.
+This gives me version 0.6.0. When I use `pip3 install diaspy` I get
+version 0.3.0 and that doesn't work. 🤷
 
 Quickstart
 ==========
