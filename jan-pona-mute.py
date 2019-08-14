@@ -109,7 +109,8 @@ class DiasporaClient(cmd.Cmd):
 
     connection = None
     notifications = []
-    index = None
+    home = []
+    numbers_refer_to = None
     post = None
     post_cache = {} # key is self.post.uid, and notification.id
 
@@ -135,8 +136,8 @@ then use the 'login' command to log in. If everything works as
 intended, use the 'save' command to save these commands to an init
 file.
 
-Once you've listed things such as notifications, enter a number to
-select the corresponding item.
+Once you've listed things such as notifications or the home stream,
+enter a number to select the corresponding item.
 """)
 
     def do_account(self, account):
@@ -156,6 +157,7 @@ select the corresponding item.
         print("Pod:      %s" % self.pod)
         print("Pager:    %s" % self.pager)
         print("Editor:   %s" % self.editor)
+        print("Cache:    %s posts" % len(self.post_cache))
 
     def do_password(self, password):
         """Set the password."""
@@ -269,6 +271,7 @@ select the corresponding item.
             for n, notification in enumerate(self.notifications):
                 print(self.header("%2d. %s %s") % (n+1, notification.when(), notification))
             print("Enter a number to select the notification.")
+            self.numbers_refer_to = 'notifications'
         else:
             print("There are no notifications. 😢")
 
@@ -294,26 +297,31 @@ select the corresponding item.
 
     def do_show(self, line):
         """Show the post given by the index number.
-The index number must refer to the current list of notifications."""
-        if not self.notifications:
-            print("No notifications were loaded.")
+The index number must refer to the current list of notifications
+or the home stream."""
+        if not self.notifications and not self.home:
+            print("Use the 'login' command to load notifications.")
             return
         if line == "":
-            print("The 'show' command takes a notification number.")
+            print("Please specify a number.")
             return
         try:
             n = int(line.strip())
-            notification = self.notifications[n-1]
-            self.index = n
+            if self.numbers_refer_to == 'notifications':
+                notification = self.notifications[n-1]
+                self.show(notification)
+                self.load(notification.about())
+            elif self.numbers_refer_to == 'home':
+                self.post = self.home[n-1]
+            else:
+                print("Internal error: not sure what numbers '%s' refer to." % self.numbers_refer_to)
+                return
         except ValueError:
             print("The 'show' command takes a notification number but '%s' is not a number" % line)
             return
         except IndexError:
             print("Index too high!")
             return
-
-        self.show(notification)
-        self.load(notification.about())
 
         print()
         self.show(self.post)
@@ -555,6 +563,68 @@ Use the 'pager' command to set your pager to something like 'mdcat'."""
         except ValueError:
             print("The 'preview' command takes a number as its argument.")
             return
+
+    def do_home(self, line):
+        """Show the main stream containing the combined posts of the
+followed users and tags and the community spotlights posts if
+the user enabled those."""
+        if line == "":
+            if self.home:
+                print("Redisplaying the cached statuses of the home stream.")
+                print("Use the 'reload' argument to reload them.")
+                print("Use the 'all' argument to show them all.")
+                print("Use a number to show only that many.")
+                print("The default is 5.")
+            else:
+                print("Loading...")
+                self.home = diaspy.streams.Stream(self.connection)
+                self.home.fill()
+                for post in self.home:
+                    if post.id not in self.post_cache:
+                        self.post_cache[post.id] = post
+        elif line == "reload":
+            if self.connection == None:
+                print("Use the 'login' command, first.")
+                return
+            if self.home:
+                print("Reloading...")
+                self.home.update()
+                line = ""
+            else:
+                self.home = diaspy.streams.Stream(self.connection)
+                self.home.fill()
+
+        n = 5
+        posts = self.home
+
+        if line == "all":
+            n = None
+        elif line != "":
+            try:
+                n = int(line.strip())
+            except ValueError:
+                print("The 'home' command takes a number as its argument, or 'reload' or 'all'.")
+                print("The default is to show the last 5 posts.")
+                return
+
+        if n == None:
+            start = 0
+        else:
+            # n is from the back
+            start = max(len(posts) - n, 0)
+
+        if posts:
+            for n, post in enumerate(posts[start:], start):
+                print()
+                print(self.header("%2d. %s %s") % (n+1, post.data()["created_at"], post.author()))
+                print()
+                self.show(post)
+
+            print("Enter a number to select the post.")
+            self.numbers_refer_to = 'home'
+        else:
+            print("The people you follow have nothing to say.")
+            print("The tags you follow are empty. 😢")
 
 # Main function
 def main():
