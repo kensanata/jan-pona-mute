@@ -497,7 +497,7 @@ Use the 'edit' command to edit notes."""
         file = self.get_note_path(line)
         if self.editor:
             subprocess.run([self.editor, file])
-            self.do_list('notes')
+            self.onecmd("notes")
         else:
             print("Use the 'editor' command to set an editor.")
 
