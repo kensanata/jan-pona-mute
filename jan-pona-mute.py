@@ -29,34 +29,69 @@ _ABBREVS = {
     "c":    "comments",
     "r":    "reload",
     "n":    "notifications",
+    "e":    "edit",
 }
 
 _RC_PATHS = (
     "~/.config/jan-pona-mute/login",
-    "~/.config/.jan-pona-mute",
+    "~/.jan-pona-mute.d/login"
     "~/.jan-pona-mute"
 )
 
+_NOTE_DIRS = (
+    "~/.config/jan-pona-mute/notes",
+    "~/.jan-pona-mute.d/notes"
+)
+
 _PAGERS = (
+    os.getenv("PAGER"),
     "mdcat",
     "fold",
     "cat"
 )
 
-# Init file finder
+_EDITORS = (
+    os.getenv("EDITOR"),
+    "vi",
+    "ed"
+)
+
 def get_rcfile():
-    for rc_path in _RC_PATHS:
-        rcfile = os.path.expanduser(rc_path)
-        if os.path.exists(rcfile):
-            return rcfile
+    """Init file finder"""
+    for path in _RC_PATHS:
+        path = os.path.expanduser(path)
+        if os.path.exists(path):
+            return path
     return None
 
-# Pager finder
+def get_notes_dir():
+    """Notes directory finder"""
+    dir = None
+    for path in _NOTE_DIRS:
+        path = os.path.expanduser(path)
+        if os.path.isdir(path):
+            dir = path
+            break
+    if dir == None:
+        dir = os.path.expanduser(_NOTE_DIRS[0])
+    if not os.path.isdir(dir):
+        os.makedirs(dir)
+    return dir
+
+def get_binary(list):
+    for cmd in list:
+        if cmd != None:
+            bin = shutil.which(cmd)
+            if bin != None:
+                return bin
+
 def get_pager():
-    for cmd in _PAGERS:
-        pager = shutil.which(cmd)
-        if pager != None:
-            return pager
+    """Pager finder"""
+    return get_binary(_PAGERS)
+
+def get_editor():
+    """Editor finder"""
+    return get_binary(_EDITORS)
 
 class DiasporaClient(cmd.Cmd):
 
@@ -69,6 +104,7 @@ class DiasporaClient(cmd.Cmd):
     pod = None
     password = None
     pager = None
+    editor = None
 
     connection = None
     notifications = []
@@ -118,6 +154,7 @@ select the corresponding item.
         print("Password: %s" % ("None" if self.password == None else "set"))
         print("Pod:      %s" % self.pod)
         print("Pager:    %s" % self.pager)
+        print("Editor:   %s" % self.editor)
 
     def do_password(self, password):
         """Set the password."""
@@ -127,13 +164,13 @@ select the corresponding item.
     def do_save(self, line):
         """Save your login information to the init file."""
         if self.username == None or self.pod == None:
-            print("Use the 'account' command to set username and pod")
+            print("Use the 'account' command to set username and pod.")
         elif self.password == None:
-            print("Use the 'password' command")
+            print("Use the 'password' command.")
         else:
             rcfile = get_rcfile()
             if rcfile == None:
-                rfile = first(_RC_PATHS)
+                rfile = _RC_PATHS[0]
             seen_account = False
             seen_password = False
             seen_login = False
@@ -188,9 +225,9 @@ select the corresponding item.
         if line != "":
             self.onecmd("account %s" % line)
         if self.username == None or self.pod == None:
-            print("Use the 'account' command to set username and pod")
+            print("Use the 'account' command to set username and pod.")
         elif self.password == None:
-            print("Use the 'password' command")
+            print("Use the 'password' command.")
         else:
             self.connection = diaspy.connection.Connection(
                 pod = "https://%s" % self.pod, username = self.username, password = self.password)
@@ -198,12 +235,17 @@ select the corresponding item.
                 self.connection.login()
                 self.onecmd("notifications")
             except diaspy.errors.LoginError:
-                print("Login failed")
+                print("Login failed.")
 
     def do_pager(self, pager):
         """Set the pager, e.g. to cat"""
         self.pager = pager
         print("Pager set: %s" % self.pager)
+
+    def do_editor(self, editor):
+        """Set the editor, e.g. to ed"""
+        self.editor = editor
+        print("Editor set: %s" % self.editor)
 
     def header(self, line):
         """Wrap line in header format."""
@@ -219,6 +261,9 @@ select the corresponding item.
                 print("Use the 'login' command, first.")
                 return
             self.notifications = diaspy.notifications.Notifications(self.connection).last()
+        else:
+            print("The 'notifications' command only takes the optional argument 'reload'.")
+            return
         if self.notifications:
             for n, notification in enumerate(self.notifications):
                 print(self.header("%2d. %s %s") % (n+1, notification.when(), notification))
@@ -253,7 +298,7 @@ The index number must refer to the current list of notifications."""
             print("No notifications were loaded.")
             return
         if line == "":
-            print("The 'show' command takes a notification number")
+            print("The 'show' command takes a notification number.")
             return
         try:
             n = int(line.strip())
@@ -285,7 +330,7 @@ The index number must refer to the current list of notifications."""
 or get it from the cache."""
         if id in self.post_cache:
             self.post = self.post_cache[id]
-            print("Retrieved post from the cache")
+            print("Retrieved post from the cache.")
         else:
             print("Loading...")
             self.post = diaspy.models.Post(connection = self.connection, id = id)
@@ -328,15 +373,18 @@ show that many. The default is to load the last five."""
             try:
                 n = int(line.strip())
             except ValueError:
-                print("The 'comments' command takes a number as its argument, or 'all'")
-                print("The default is to show the last 5 comments")
+                print("The 'comments' command takes a number as its argument, or 'all'.")
+                print("The default is to show the last 5 comments.")
                 return
 
-        if n != None:
-            comments = comments[-n:]
+        if n == None:
+            start = 0
+        else:
+            # n is from the back
+            start = max(len(comments) - n, 0)
 
         if comments:
-            for n, comment in enumerate(comments):
+            for n, comment in enumerate(comments[start:], start):
                 print()
                 print(self.header("%2d. %s %s") % (n+1, comment.when(), comment.author()))
                 print()
@@ -345,13 +393,31 @@ show that many. The default is to load the last five."""
             print("There are no comments on the selected post.")
 
     def do_comment(self, line):
-        """Leave a comment on the current post."""
+        """Leave a comment on the current post.
+If you just use a number as your comment, it will refer to a note.
+Use the 'edit' command to edit notes."""
         if self.post == None:
             print("Use the 'show' command to show a post, first.")
             return
+        try:
+            n = int(line.strip())
+            notes = self.get_notes()
+            if notes:
+                try:
+                    with open(self.get_note_path(notes[n-1]), mode = 'r', encoding = 'utf-8') as fp:
+                        comment = fp.read()
+                    print("Using note #%d: %s" % (n, notes[n-1]))
+                except IndexError:
+                    print("Use the 'list notes' command to list valid numbers.")
+                    return
+            else:
+                print("There are no notes to use.")
+                return
+        except ValueError:
+            comment = line
         comment = self.post.comment(line)
         self.post.comments.add(comment)
-        self.undo.append("delete comment %s from %s" % (comment.id, self.id))
+        self.undo.append("delete comment %s from %s" % (comment.id, self.post.id))
         print("Comment posted.")
 
     def do_delete(self, line):
@@ -362,14 +428,53 @@ show that many. The default is to load the last five."""
                 if self.post == None:
                     print("Use the 'show' command to show a post, first.")
                     return
-                if len(words) != 4:
-                    print("Deleting a comment requires a comment id and a post id.")
-                    print("delete comment <comment id> from <post id>")
+                if len(words) == 4:
+                    self.post_cache[words[3]].delete_comment(words[1])
+                    print("Comment deleted.")
                     return
-                self.post_cache[words[3]].delete_comment(words[1])
-                print("Comment deleted.")
+                if len(words) == 2:
+                    try:
+                        n = int(words[1])
+                        comment = self.post.comments[n-1]
+                        id = comment.id
+                    except ValueError:
+                        print("Deleting a comment requires an integer.")
+                        return
+                    except IndexError:
+                        print("Use the 'comments' command to find valid comment numbers.")
+                        return
+                    # not catching any errors from diaspy
+                    self.post.delete_comment(id)
+                    # there is no self.post.comments.remove(id)
+                    comments = [c.id for c in self.post.comments if c.id != id]
+                    self.post.comments = diaspy.models.Comments(comments)
+                    print("Comment deleted.")
+                    return
+                else:
+                    print("Deleting a comment requires a comment id and a post id, or a number.")
+                    print("delete comment <comment id> from <post id>")
+                    print("delete comment 5")
+                    return
+            if words[0] == "note":
+                if len(words) != 2:
+                    print("Deleting a note requires a number.")
+                    return
+                try:
+                    n = int(words[1])
+                except ValueError:
+                    print("Deleting a note requires an integer.")
+                    return
+                notes = self.get_notes()
+                if notes:
+                    try:
+                        os.unlink(self.get_note_path(notes[n-1]))
+                        print("Deleted note #%d: %s" % (n, notes[n-1]))
+                    except IndexError:
+                        print("Use the 'list notes' command to list valid numbers.")
+                else:
+                    print("There are no notes to delete.")
             else:
-                print("Deleting '%s' is not supported." % words[0])
+                print("Things to delete: comment, note.")
                 return
         else:
             print("Delete what?")
@@ -377,12 +482,46 @@ show that many. The default is to load the last five."""
     def do_undo(self, line):
         """Undo an action."""
         if line != "":
-            print("Undo does not take an argument.")
+            print("The 'undo' command does not take an argument.")
             return
         if not self.undo:
             print("There is nothing to undo.")
             return
         return self.onecmd(self.undo.pop())
+
+    def do_edit(self, line):
+        """Edit a note with a given name."""
+        if line == "":
+            print("Edit takes the name of a note as an argument.")
+            return
+        file = self.get_note_path(line)
+        if self.editor:
+            subprocess.run([self.editor, file])
+            self.do_list('notes')
+        else:
+            print("Use the 'editor' command to set an editor.")
+
+    def do_notes(self, line):
+        """List notes"""
+        if line != "":
+            print("The 'notes' command does not take an argument.")
+            return
+        notes = self.get_notes()
+        if notes:
+            for n, note in enumerate(notes):
+                print(self.header("%2d. %s") % (n+1, note))
+            else:
+                print("Use 'edit' to create a note.")
+        else:
+            print("Things to list: notes.")
+
+    def get_notes(self):
+        """Get the list of notes."""
+        return os.listdir(get_notes_dir())
+
+    def get_note_path(self, filename):
+        """Get the correct path for a note."""
+        return os.path.join(get_notes_dir(), filename)
 
 # Main function
 def main():
@@ -398,6 +537,7 @@ def main():
 
     # Process init file
     seen_pager = False
+    seen_editor = False
     if args.init_file:
         rcfile = get_rcfile()
         if rcfile:
@@ -409,12 +549,17 @@ def main():
                         c.cmdqueue.append(line)
                     if not seen_pager:
                         seen_pager = line.startswith("pager ");
+                    if not seen_editor:
+                        seen_editor = line.startswith("editor ");
         else:
-            print("Use the 'save' command to save your login sequence to an init file")
+            print("Use the 'save' command to save your login sequence to an init file.")
 
     if not seen_pager:
         # prepend
         c.cmdqueue.insert(0, "pager %s" % get_pager())
+    if not seen_editor:
+        # prepend
+        c.cmdqueue.insert(0, "editor %s" % get_editor())
 
     # Endless interpret loop
     while True:
