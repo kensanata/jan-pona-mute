@@ -405,8 +405,7 @@ Use the 'edit' command to edit notes."""
             notes = self.get_notes()
             if notes:
                 try:
-                    with open(self.get_note_path(notes[n-1]), mode = 'r', encoding = 'utf-8') as fp:
-                        line = fp.read()
+                    line = self.read_note(notes[n-1])
                     print("Using note #%d: %s" % (n, notes[n-1]))
                 except IndexError:
                     print("Use the 'list notes' command to list valid numbers.")
@@ -527,6 +526,11 @@ Use the 'edit' command to edit notes."""
     def get_note_path(self, filename):
         """Get the correct path for a note."""
         return os.path.join(get_notes_dir(), filename)
+
+    def read_note(self, filename):
+        """Get text of a note."""
+        with open(self.get_note_path(filename), mode = 'r', encoding = 'utf-8') as fp:
+            return fp.read()
 
 # Main function
 def main():
