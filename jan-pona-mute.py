@@ -427,12 +427,15 @@ Use the 'edit' command to edit notes."""
         words = line.strip().split()
         if words:
             if words[0] == "comment":
+                if len(words) == 4:
+                    post = self.post_cache[words[3]]
+                    post.delete_comment(words[1])
+                    comments = [c.id for c in post.comments if c.id != id]
+                    post.comments = diaspy.models.Comments(comments)
+                    print("Comment deleted.")
+                    return
                 if self.post == None:
                     print("Use the 'show' command to show a post, first.")
-                    return
-                if len(words) == 4:
-                    self.post_cache[words[3]].delete_comment(words[1])
-                    print("Comment deleted.")
                     return
                 if len(words) == 2:
                     try:
