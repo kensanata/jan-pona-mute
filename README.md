@@ -84,6 +84,44 @@ written. If none exists, the first one is going to be created by the
 Any further commands you put into the file are simple executed as if
 you were to type them every time you start the program.
 
+Notes
+-----
+
+One thing I care about is editing comments with my favourite editor
+and previewing them. This works really well if you have `mdcat` as it
+renders Markdown. Here's the workflow:
+
+1. check notifications
+2. pick a post
+3. show latest comments
+4. compose a note
+5. preview note
+6. leave a comment with that note
+
+This is what it looks like, assuming your editor is `ed`:
+
+```
+> notifications
+...
+> 1
+...
+> comments
+...
+> note nice
+/home/alex/.config/jan-pona-mute/notes/nice: No such file or directory
+a
+OK, I like this. Thanks!
+.
+w
+25
+q
+ 1. nice
+Use 'edit' to create a note.
+> preview 1
+OK, I like this. Thanks!
+> comment 1
+```
+
 Reference
 ---------
 
