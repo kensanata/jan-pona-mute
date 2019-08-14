@@ -22,17 +22,6 @@ import cmd
 import sys
 import os
 
-# Command abbreviations
-_ABBREVS = {
-    "q":    "quit",
-    "p":    "preview",
-    "c":    "comments",
-    "r":    "reload",
-    "n":    "notifications",
-    "e":    "edit",
-    "d":    "delete",
-}
-
 _RC_PATHS = (
     "~/.config/jan-pona-mute/login",
     "~/.jan-pona-mute.d/login"
@@ -56,6 +45,17 @@ _EDITORS = (
     "vi",
     "ed"
 )
+
+shortcuts = {
+    "q":    "quit",
+    "p":    "preview",
+    "c":    "comments",
+    "r":    "reload",
+    "n":    "notifications",
+    "e":    "edit",
+    "d":    "delete",
+    "g":    "notifications reload",
+}
 
 def get_rcfile():
     """Init file finder"""
@@ -151,7 +151,7 @@ enter a number to select the corresponding item.
 
     def do_info(self, line):
         """Get some info about things. By default, it is info about yourself."""
-        print("Info about yourself:")
+        print(self.header("Info"))
         print("Username: %s" % self.username)
         print("Password: %s" % ("None" if self.password == None else "set"))
         print("Pod:      %s" % self.pod)
@@ -269,7 +269,10 @@ enter a number to select the corresponding item.
             return
         if self.notifications:
             for n, notification in enumerate(self.notifications):
-                print(self.header("%2d. %s %s") % (n+1, notification.when(), notification))
+                if notification.unread:
+                    print(self.header("%2d. %s %s") % (n+1, notification.when(), notification))
+                else:
+                    print("%2d. %s %s" % (n+1, notification.when(), notification))
             print("Enter a number to select the notification.")
             self.numbers_refer_to = 'notifications'
         else:
@@ -287,8 +290,8 @@ enter a number to select the corresponding item.
 
         # Expand abbreviated commands
         first_word = line.split()[0].strip()
-        if first_word in _ABBREVS:
-            full_cmd = _ABBREVS[first_word]
+        if first_word in shortcuts:
+            full_cmd = shortcuts[first_word]
             expanded = line.replace(first_word, full_cmd, 1)
             return self.onecmd(expanded)
 
@@ -625,6 +628,30 @@ the user enabled those."""
         else:
             print("The people you follow have nothing to say.")
             print("The tags you follow are empty. 😢")
+
+    def do_shortcuts(self, line):
+        """List all shortcuts."""
+        if line != "":
+            print("The 'shortcuts' command does not take an argument.")
+            return
+        print(self.header("Shortcuts"))
+        for shortcut in sorted(shortcuts):
+            print("%s\t%s" % (shortcut, shortcuts[shortcut]))
+        print("Use the 'shortcut' command to change or add shortcuts.")
+
+    def do_shortcut(self, line):
+        """Define a new shortcut."""
+        words = line.strip().split(maxsplit = 1)
+        if len(words) == 0:
+            return self.onecmd("shortcuts")
+        elif len(words) == 1:
+            shortcut = words[0]
+            if shortcut in shortcuts:
+                print("%s\t%s" % (shortcut, shortcuts[shortcut]))
+            else:
+                print("%s is not a shortcut" % shortcut)
+        else:
+            shortcuts[words[0]] = words[1]
 
 # Main function
 def main():
