@@ -93,8 +93,9 @@ Notes
 -----
 
 One thing I care about is editing comments with my favourite editor
-and previewing them. This works really well if you have `mdcat` as it
-renders Markdown. Here's the workflow:
+and previewing them. This works really well if you have
+[mdcat](https://github.com/lunaryorn/mdcat) as it renders Markdown.
+Here's the workflow:
 
 1. check notifications
 2. pick a post
@@ -131,3 +132,46 @@ Reference
 ---------
 
 So much is still in flux. Please use the `help` command to learn more.
+
+* use **intro** if you want to skip reading the rest of this list 😅
+
+* use **account**, **password**, and **login** to login into your
+  account; use **save** to store these three commands in your init
+  file
+
+* use **shortcuts** to show the current shortcuts; use **shortcut** to
+  define a new shortcut; these are good commands to add to your init
+  file (the **save** command won't do this for you)
+
+* use **notifications** to see the latest notifications, use
+  **notifications reload** to update the list; this is also a good
+  command to add to your init file
+
+* use **home** to see your home stream, use **home reload** to update
+  the list; use **home all** to see the full list; use **home 3** to
+  see the last 3 items
+
+* use **show** and a number to show the post a notification is
+  referring to, or to choose a post from your home stream; this is
+  what then allows you to use **comments** to show the comments to
+  that post; use **comments 3** to see the last 3 items
+
+* use **comment** to post a comment, use **post** to write a new post;
+  if you use a number instead of a writing a text, the number refers
+  to a note (see below)
+
+* use **undo** to delete a comment or post after writing it; use
+  **delete comment** or **delete post** to delete them at a later date
+
+* use **edit** and a filename to write a note; use **notes** to list
+  your notes; use **preview** to show a note; use **delete note** to
+  delete a note
+
+* use **editor** to set your favourite editor (or set the EDITOR
+  environment variable); use **pager** to set your favourite page (or
+  set the PAGER environment variable); consider installing
+  [mdcat](https://github.com/lunaryorn/mdcat) and using it as your pager
+
+* use **info** to review your settings
+
+* use **quit** to end the program
