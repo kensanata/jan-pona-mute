@@ -232,9 +232,11 @@ enter a number to select the corresponding item.
         elif self.password == None:
             print("Use the 'password' command.")
         else:
+            print("Setting up a connection...")
             self.connection = diaspy.connection.Connection(
                 pod = "https://%s" % self.pod, username = self.username, password = self.password)
             try:
+                print("Logging in...")
                 self.connection.login()
             except diaspy.errors.LoginError:
                 print("Login failed.")
