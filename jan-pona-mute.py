@@ -259,7 +259,7 @@ enter a number to select the corresponding item.
         """List notifications. Use 'notifications reload' to reload them."""
         if line == "" and self.notifications:
             print("Redisplaying the notifications in the cache.")
-            print("Use the 'reload' argument to reload them.")
+            print("Use 'notifications reload' to reload them.")
         elif line == "reload" or not self.notifications:
             if self.connection == None:
                 print("Use the 'login' command, first.")
