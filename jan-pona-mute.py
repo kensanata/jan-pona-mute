@@ -607,7 +607,7 @@ Use the 'edit' command to edit notes."""
 
     def get_notes(self):
         """Get the list of notes."""
-        return os.listdir(get_notes_dir())
+        return sorted([dir for dir in os.listdir(get_notes_dir()) if not dir.endswith("~")])
 
     def get_note_path(self, filename):
         """Get the correct path for a note."""
