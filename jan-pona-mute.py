@@ -353,8 +353,8 @@ or get it from the cache."""
             try:
                 self.post = diaspy.models.Post(connection = self.connection, id = id)
                 self.post_cache[id] = self.post
-            except diaspy.errors.PostError:
-                print("Cannot load this post.")
+            except diaspy.errors.PostError as e:
+                print("Cannot load this post: %s" % e)
                 return None
         return self.post
 
@@ -710,6 +710,33 @@ the user enabled those."""
                 print("%s is not a shortcut" % shortcut)
         else:
             shortcuts[words[0]] = words[1]
+
+    def do_debug(self, line):
+        """Debug notifications, posts, or comments."""
+        words = line.strip().split()
+        if len(words) != 2:
+            print("Debug takes two arguments: what to debug, and a number.")
+            return
+        if words[0] == "post":
+            items = self.home
+        elif words[0] == "notification":
+            items = self.notifications
+        elif words[0] == "comments":
+            if self.post == None:
+                print("Use the 'show' command to show a post, first.")
+                return
+            items = self.post.comments
+        try:
+            n = int(words[1])
+            item = items[n-1]
+        except ValueError:
+            print("Debugging a %s requires an integer." % words[0])
+            return
+        except IndexError:
+            print("There is no %s #%d" % n)
+            return
+        print(self.header("Debug %s #%d" % (words[0], n)))
+        print(item.__dict__)
 
 # Main function
 def main():
