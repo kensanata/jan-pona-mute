@@ -13,6 +13,17 @@ deal with my specific use-cases:
 It's *very* limited but it's helping me get started using the
 [diaspy](https://github.com/marekjm/diaspy) Python library.
 
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
+
+- [Installation](#installation)
+- [Quickstart](#quickstart)
+- [Next Step](#next-step)
+- [Notes](#notes)
+- [Reference](#reference)
+
+<!-- markdown-toc end -->
+
 Installation
 ------------
 
@@ -28,7 +39,7 @@ This gives me version 0.6.0. When I use `pip3 install diaspy` I get
 version 0.3.0 and that doesn't work. 🤷
 
 Quickstart
-==========
+----------
 
 ```text
 $ python3 jan-pona-mute.py
