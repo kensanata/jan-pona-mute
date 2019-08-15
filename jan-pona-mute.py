@@ -236,7 +236,6 @@ enter a number to select the corresponding item.
                 pod = "https://%s" % self.pod, username = self.username, password = self.password)
             try:
                 self.connection.login()
-                self.onecmd("notifications")
             except diaspy.errors.LoginError:
                 print("Login failed.")
 

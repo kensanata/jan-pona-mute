@@ -39,6 +39,7 @@ Username and pod set: kensanata@pluspora.com
 > password *secret*
 Password set
 > login
+> notifications
  1. 2019-08-13T19:40:17.000Z Joe Doe has liked your post I've started writing...
  2. 2019-08-13T17:59:23.000Z Joe Doe commented on your post Please help me wi...
  3. 2019-08-13T17:03:45.000Z Jane Doe has liked your post I've started writin...
@@ -82,7 +83,9 @@ written. If none exists, the first one is going to be created by the
 `save` command.
 
 Any further commands you put into the file are simple executed as if
-you were to type them every time you start the program.
+you were to type them every time you start the program. A simple
+change would be to add `notifications` as a command to the end of the
+file.
 
 Notes
 -----
