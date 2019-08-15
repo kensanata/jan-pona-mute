@@ -316,7 +316,8 @@ post again."""
                 if self.numbers_refer_to == 'notifications':
                     notification = self.notifications[n-1]
                     self.show(notification)
-                    self.load(notification.about())
+                    if not self.load(notification.about()):
+                        return
                 elif self.numbers_refer_to == 'home':
                     posts = sorted(self.home, key=lambda x: x.data()["created_at"])
                     self.post = posts[n-1]
@@ -349,8 +350,12 @@ or get it from the cache."""
             print("Retrieved post from the cache.")
         else:
             print("Loading...")
-            self.post = diaspy.models.Post(connection = self.connection, id = id)
-            self.post_cache[id] = self.post
+            try:
+                self.post = diaspy.models.Post(connection = self.connection, id = id)
+                self.post_cache[id] = self.post
+            except diaspy.errors.PostError:
+                print("Cannot load this post.")
+                return None
         return self.post
 
     def do_reload(self, line):
