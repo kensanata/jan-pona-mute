@@ -38,6 +38,18 @@ $ pip3 install .
 This gives me version 0.6.0. When I use `pip3 install diaspy` I get
 version 0.3.0 and that doesn't work. 🤷
 
+You need to download this program as well, obviously.
+
+```text
+$ git clone https://alexschroeder.ch/cgit/jan-pona-mute
+```
+
+With that done, you should be able to run it:
+
+```text
+$ python3 jan-pona-mute/jan-pona-mute.py
+```
+
 Quickstart
 ----------
 
