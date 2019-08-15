@@ -331,15 +331,15 @@ post again."""
                 return
 
         print()
+        print(self.header("%2d. %s %s") % (n, self.post.data()["created_at"], self.post.author()))
+        print()
         self.show(self.post)
+        print()
 
         if(self.post.comments):
-            print()
-            if len(self.post.comments) == 1:
-                print("There is 1 comment.")
-            else:
-                print("There are %d comments." % len(self.post.comments))
+            print("%d comment%s" % (len(self.post.comments), "s" if len(self.post.comments) != 1 else ""))
             print("Use the 'comments' command to list the latest comments.")
+        print("Use the 'comment' command to leave a comment.")
 
     def load(self, id):
         """Load the post belonging to the id (from a notification),
@@ -405,8 +405,10 @@ show that many. The default is to load the last five."""
                 print(self.header("%2d. %s %s") % (n+1, comment.when(), comment.author()))
                 print()
                 self.show(comment)
+            print()
         else:
             print("There are no comments on the selected post.")
+        print("Use the 'comment' command to post a comment.")
 
     def do_comment(self, line):
         """Leave a comment on the current post.
@@ -656,7 +658,10 @@ the user enabled those."""
                 print(self.header("%2d. %s %s") % (n+1, post.data()["created_at"], post.author()))
                 print()
                 self.show(post)
+                print()
+                print("%d comment%s" % (len(post.comments), "s" if len(post.comments) != 1 else ""))
 
+            print()
             print("Enter a number to select the post.")
             self.numbers_refer_to = 'home'
         else:
