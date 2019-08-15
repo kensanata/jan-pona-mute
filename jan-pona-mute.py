@@ -471,6 +471,20 @@ Use the 'edit' command to edit notes."""
         """Delete a comment."""
         words = line.strip().split()
         if words:
+            if words[0] == "post":
+                if len(words) > 1:
+                    print("Deleting a post takes no argument. It always deletes the selected post.")
+                    return
+                if not self.post:
+                    print("Use the 'show' command to select a post.")
+                    return
+                if self.home and self.post in self.home:
+                    self.home._stream.remove(self.post)
+                if self.post.id in self.post_cache:
+                    self.post_cache.pop(self.post.id)
+                self.post.delete()
+                print("Post deleted.")
+                return
             if words[0] == "comment":
                 if len(words) == 4:
                     post = self.post_cache[words[3]]
@@ -524,7 +538,7 @@ Use the 'edit' command to edit notes."""
                 else:
                     print("There are no notes to delete.")
             else:
-                print("Things to delete: comment, note.")
+                print("Things to delete: post, comment, note.")
                 return
         else:
             print("Delete what?")
