@@ -175,9 +175,10 @@ So much is still in flux. Please use the `help` command to learn more.
   see the last 3 items
 
 * use **show** and a number to show the post a notification is
-  referring to, or to choose a post from your home stream; this is
-  what then allows you to use **comments** to show the comments to
-  that post; use **comments 3** to see the last 3 items
+  referring to, or to choose a post from your home stream; use
+  **next** and **previous** to move from item to item; this is how you
+  select a post which allows you to use **comments** to show the
+  comments for that post; use **comments 3** to see the last 3 items
 
 * use **comment** to post a comment, use **post** to write a new post;
   if you use a number instead of a writing a text, the number refers
