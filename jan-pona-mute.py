@@ -49,6 +49,7 @@ _EDITORS = (
 shortcuts = {
     "q":    "quit",
     "p":    "preview",
+    "prev": "previous",
     "c":    "comments",
     "r":    "reload",
     "n":    "notifications",
@@ -111,6 +112,7 @@ class DiasporaClient(cmd.Cmd):
     notifications = []
     home = None
     numbers_refer_to = None
+    last_number = None
     post = None
     post_cache = {} # key is self.post.uid, and notification.id
 
@@ -279,11 +281,26 @@ enter a number to select the corresponding item.
         else:
             print("There are no notifications. 😢")
 
-    ### The end!
     def do_quit(self, *args):
         """Exit jan-pona-mute."""
         print("Be safe!")
         sys.exit()
+
+    def emptyline(self):
+        """Go to the next notification or post."""
+        return self.onecmd("next")
+
+    def do_previous(self, line):
+        """Go to the previous notification or post."""
+        if self.last_number and self.last_number > 1:
+            print("Previous...")
+            return self.onecmd("show %d" % (self.last_number - 1))
+
+    def do_next(self, line):
+        """Go to the next notification or post."""
+        if self.last_number:
+            print("Next...")
+            return self.onecmd("show %d" % (self.last_number + 1))
 
     def default(self, line):
         if line.strip() == "EOF":
@@ -296,7 +313,7 @@ enter a number to select the corresponding item.
             expanded = line.replace(first_word, full_cmd, 1)
             return self.onecmd(expanded)
 
-        # Finally, see if it's a notification and show it
+        # Finally, see if it's a notification and it
         self.do_show(line)
 
     def do_show(self, line):
@@ -305,7 +322,7 @@ The index number must refer to the current list of notifications
 or the home stream. If no index number is given, show the current
 post again."""
         if not self.notifications and not self.home:
-            print("Use the 'login' command to load notifications.")
+            print("Use the 'notifications' command to load notifications.")
             return
         if line == "" and self.post == None:
             print("Please specify a number.")
@@ -315,12 +332,14 @@ post again."""
                 n = int(line.strip())
                 if self.numbers_refer_to == 'notifications':
                     notification = self.notifications[n-1]
+                    self.last_number = n; # doesn't matter if we can't load it later
                     self.show(notification)
-                    if not self.load(notification.about()):
+                    if not self.load(str(notification.about())): # elsewhere, id is a string
                         return
                 elif self.numbers_refer_to == 'home':
                     posts = sorted(self.home, key=lambda x: x.data()["created_at"])
                     self.post = posts[n-1]
+                    self.last_number = n;
                 else:
                     print("Internal error: not sure what numbers '%s' refer to." % self.numbers_refer_to)
                     return
