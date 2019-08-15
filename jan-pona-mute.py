@@ -109,7 +109,7 @@ class DiasporaClient(cmd.Cmd):
 
     connection = None
     notifications = []
-    home = []
+    home = None
     numbers_refer_to = None
     post = None
     post_cache = {} # key is self.post.uid, and notification.id
@@ -300,30 +300,32 @@ enter a number to select the corresponding item.
     def do_show(self, line):
         """Show the post given by the index number.
 The index number must refer to the current list of notifications
-or the home stream."""
+or the home stream. If no index number is given, show the current
+post again."""
         if not self.notifications and not self.home:
             print("Use the 'login' command to load notifications.")
             return
-        if line == "":
+        if line == "" and self.post == None:
             print("Please specify a number.")
             return
-        try:
-            n = int(line.strip())
-            if self.numbers_refer_to == 'notifications':
-                notification = self.notifications[n-1]
-                self.show(notification)
-                self.load(notification.about())
-            elif self.numbers_refer_to == 'home':
-                self.post = self.home[n-1]
-            else:
-                print("Internal error: not sure what numbers '%s' refer to." % self.numbers_refer_to)
+        if line != "":
+            try:
+                n = int(line.strip())
+                if self.numbers_refer_to == 'notifications':
+                    notification = self.notifications[n-1]
+                    self.show(notification)
+                    self.load(notification.about())
+                elif self.numbers_refer_to == 'home':
+                    self.post = self.home[n-1]
+                else:
+                    print("Internal error: not sure what numbers '%s' refer to." % self.numbers_refer_to)
+                    return
+            except ValueError:
+                print("The 'show' command takes a notification number but '%s' is not a number" % line)
                 return
-        except ValueError:
-            print("The 'show' command takes a notification number but '%s' is not a number" % line)
-            return
-        except IndexError:
-            print("Index too high!")
-            return
+            except IndexError:
+                print("Index too high!")
+                return
 
         print()
         self.show(self.post)
@@ -432,6 +434,34 @@ Use the 'edit' command to edit notes."""
         self.undo.append("delete comment %s from %s" % (comment.id, self.post.id))
         print("Comment posted.")
 
+    def do_post(self, line):
+        """Write a post on the current stream.
+If you just use a number as your post, it will refer to a note.
+Use the 'edit' command to edit notes."""
+        if self.home == None:
+            self.home = diaspy.streams.Stream(self.connection)
+        try:
+            # if the post is just a number, use a note to post
+            n = int(line.strip())
+            notes = self.get_notes()
+            if notes:
+                try:
+                    line = self.read_note(notes[n-1])
+                    print("Using note #%d: %s" % (n, notes[n-1]))
+                except IndexError:
+                    print("Use the 'list notes' command to list valid numbers.")
+                    return
+            else:
+                print("There are no notes to use.")
+                return
+        except ValueError:
+            # in which case we'll simply post the line
+            pass
+        self.post = self.home.post(text = line)
+        self.post_cache[self.post.id] = self.post
+        self.undo.append("delete post %s" % self.post.id)
+        print("Posted. Use the 'show' command to show it.")
+
     def do_delete(self, line):
         """Delete a comment."""
         words = line.strip().split()
@@ -525,10 +555,12 @@ Use the 'edit' command to edit notes."""
         if notes:
             for n, note in enumerate(notes):
                 print(self.header("%2d. %s") % (n+1, note))
-            else:
-                print("Use 'edit' to create a note.")
+            print("Use the 'edit' command to edit a note.")
+            print("Use the 'preview' command to look at a note.")
+            print("Use the 'post' command to post a note.")
+            print("Use the 'comment' command to post a comment.")
         else:
-            print("Things to list: notes.")
+            print("Use 'edit' to create a note.")
 
     def get_notes(self):
         """Get the list of notes."""
@@ -597,7 +629,7 @@ the user enabled those."""
                 self.home.fill()
 
         n = 5
-        posts = self.home
+        posts = sorted(self.home, key=lambda x: x.data()["created_at"])
 
         if line == "all":
             n = None
