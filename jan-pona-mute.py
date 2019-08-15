@@ -318,7 +318,8 @@ post again."""
                     self.show(notification)
                     self.load(notification.about())
                 elif self.numbers_refer_to == 'home':
-                    self.post = self.home[n-1]
+                    posts = sorted(self.home, key=lambda x: x.data()["created_at"])
+                    self.post = posts[n-1]
                 else:
                     print("Internal error: not sure what numbers '%s' refer to." % self.numbers_refer_to)
                     return
