@@ -55,7 +55,7 @@ shortcuts = {
     "n":    "notifications",
     "e":    "edit",
     "d":    "delete",
-    "g":    "notifications reload",
+    "g":    "notifications update",
 }
 
 def get_rcfile():
@@ -258,19 +258,28 @@ enter a number to select the corresponding item.
         return self.header_format % line
 
     def do_notifications(self, line):
-        """List notifications. Use 'notifications reload' to reload them."""
-        if line == "" and self.notifications:
-            print("Redisplaying the notifications in the cache.")
-            print("Use 'notifications reload' to reload them.")
-        elif line == "reload" or not self.notifications:
+        """List notifications.
+Use 'notifications update' to fetch the latest five.
+Use 'notifications more' to fetch five more."""
+        if not self.notifications:
             if self.connection == None:
                 print("Use the 'login' command, first.")
                 return
-            self.notifications = diaspy.notifications.Notifications(self.connection).last()
+            self.notifications = diaspy.notifications.Notifications(self.connection)
+        if line == "":
+            print("Redisplaying the notifications in the cache.")
+            print("Use 'notifications update' to load new ones.")
+        elif line == "update":
+            self.notifications.update()
+        elif line == "more":
+            self.notifications.more()
         else:
-            print("The 'notifications' command only takes the optional argument 'reload'.")
+            print("The 'notifications' command only takes one of the following argument:")
+            print("- 'reload' fetches the last five notifications")
+            print("- 'more' fetches five earlier notifications")
             return
-        if self.notifications:
+        # print notifications
+        if len(self.notifications) > 0:
             for n, notification in enumerate(self.notifications):
                 if notification.unread:
                     print(self.header("%2d. %s %s") % (n+1, notification.when(), notification))
