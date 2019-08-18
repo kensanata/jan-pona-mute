@@ -53,9 +53,10 @@ shortcuts = {
     "c":    "comments",
     "r":    "reload",
     "n":    "notifications",
+    "m":    "notifications more",
+    "g":    "notifications update",
     "e":    "edit",
     "d":    "delete",
-    "g":    "notifications update",
 }
 
 def get_rcfile():
