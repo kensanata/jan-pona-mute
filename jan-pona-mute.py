@@ -398,7 +398,7 @@ or get it from the cache."""
     def show(self, item):
         """Show the current item."""
         if self.pager:
-            subprocess.run(self.pager, input = str(item), text = True)
+            subprocess.run(self.pager.split(), input = str(item), text = True)
         else:
             print(str(item))
 
@@ -593,7 +593,9 @@ Use the 'edit' command to edit notes."""
             return
         file = self.get_note_path(line)
         if self.editor:
-            subprocess.run([self.editor, file])
+            command = self.editor.split()
+            command.append(file)
+            subprocess.run(command)
             self.onecmd("notes")
         else:
             print("Use the 'editor' command to set an editor.")
