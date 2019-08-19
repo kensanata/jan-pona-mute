@@ -340,6 +340,7 @@ post again."""
         if line == "" and self.post == None:
             print("Please specify a number.")
             return
+        n = 0
         if line != "":
             try:
                 n = int(line.strip())
@@ -364,7 +365,10 @@ post again."""
                 return
 
         print()
-        print(self.header("%2d. %s %s") % (n, self.post.data()["created_at"], self.post.author()))
+        if n:
+            print(self.header("%2d. %s %s") % (n, self.post.data()["created_at"], self.post.author()))
+        else:
+            print(self.header("%s %s") % (self.post.data()["created_at"], self.post.author()))
         print()
         self.show(self.post)
         print()
