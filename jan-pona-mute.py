@@ -245,12 +245,15 @@ enter a number to select the corresponding item.
                 print("Login failed.")
 
     def do_pager(self, pager):
-        """Set the pager, e.g. to cat"""
+        """Set the pager, e.g. to 'fold -w 72'.
+The command line can contain options and arguments."""
         self.pager = pager
         print("Pager set: %s" % self.pager)
 
     def do_editor(self, editor):
-        """Set the editor, e.g. to ed"""
+        """Set the editor, e.g. to ed.
+The command line can contain options and arguments.
+The filename is appended at the end."""
         self.editor = editor
         print("Editor set: %s" % self.editor)
 
