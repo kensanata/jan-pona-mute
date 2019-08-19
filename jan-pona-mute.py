@@ -463,8 +463,8 @@ Use the 'edit' command to edit notes."""
             return
         notes = self.get_notes()
         if line in notes:
-            line = self.read_note(line)
             print("Using note '%s'" % line)
+            line = self.read_note(line)
         comment = self.post.comment(line)
         self.post.comments.add(comment)
         self.undo.append("delete comment %s from %s" % (comment.id, self.post.id))
@@ -487,8 +487,8 @@ Use the 'edit' command to edit notes."""
             self.home = diaspy.streams.Stream(self.connection)
         notes = self.get_notes()
         if line in notes:
-            line = self.read_note(line)
             print("Using note '%s'" % line)
+            line = self.read_note(line)
         self.post = self.home.post(text = line)
         self.post_cache[self.post.id] = self.post
         self.undo.append("delete post %s" % self.post.id)
