@@ -28,17 +28,20 @@ Installation
 ------------
 
 We need the [diaspy](https://github.com/marekjm/diaspy) library.
+Sadly, I've run into a few issues and made some fixes. I contributed
+these back but just to be sure I recommend you install diaspy from my
+own repository. That's the one I use.
 
 ```text
-$ git clone https://github.com/marekjm/diaspy.git
+$ git clone https://alexschroeder.ch/cgit/diaspy
 $ cd diaspy
 $ pip3 install .
 ```
 
-This gives me version 0.6.0. When I use `pip3 install diaspy` I get
-version 0.3.0 and that doesn't work. 🤷
+Note that using `pip3 install diaspy` gets me a much older revision
+and things won't work at all. 🤷
 
-You need to download this program as well, obviously.
+You need to download `jan-pona-mute` as well, obviously:
 
 ```text
 $ git clone https://alexschroeder.ch/cgit/jan-pona-mute
