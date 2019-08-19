@@ -149,10 +149,13 @@ w
 q
  1. nice
 Use 'edit' to create a note.
-> preview 1
+> preview nice
 OK, I like this. Thanks!
-> comment 1
+> comment nice
 ```
+
+This is important: if you have a note matching the comment you're
+about to post, the comment is replaced with the note's content.
 
 Reference
 ---------

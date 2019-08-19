@@ -402,7 +402,10 @@ or get it from the cache."""
     def show(self, item):
         """Show the current item."""
         if self.pager:
-            subprocess.run(self.pager.split(), input = str(item), text = True)
+            try:
+                subprocess.run(self.pager.split(), input = str(item), text = True)
+            except FileNotFoundError:
+                print("Could not execute '%s'. Use the 'pager' command to change the pager." % self.pager)
         else:
             print(str(item))
 
@@ -454,59 +457,42 @@ Use the 'edit' command to edit notes."""
         if self.post == None:
             print("Use the 'show' command to show a post, first.")
             return
-        try:
-            # if the comment is just a number, use a note to post
-            n = int(line.strip())
-            notes = self.get_notes()
-            if notes:
-                try:
-                    line = self.read_note(notes[n-1])
-                    print("Using note #%d: %s" % (n, notes[n-1]))
-                except IndexError:
-                    print("Use the 'list notes' command to list valid numbers.")
-                    return
-            else:
-                print("There are no notes to use.")
-                return
-        except ValueError:
-            # in which case we'll simply comment with the line
-            pass
+        notes = self.get_notes()
+        if line in notes:
+            line = self.read_note(line)
+            print("Using note '%s'" % line)
         comment = self.post.comment(line)
         self.post.comments.add(comment)
         self.undo.append("delete comment %s from %s" % (comment.id, self.post.id))
         print("Comment posted.")
 
+    def complete_comment(self, text, line, begidx, endidx):
+        """Complete on filenames of notes"""
+        notes = self.get_notes()
+        return [note for note in notes if note.startswith(text)]
+
     def do_post(self, line):
         """Write a post on the current stream.
 If you just use a number as your post, it will refer to a note.
 Use the 'edit' command to edit notes."""
+        if line == "":
+            print("Post what?")
+            return
         if self.home == None:
+            print("Loading...")
             self.home = diaspy.streams.Stream(self.connection)
-        try:
-            # if the post is just a number, use a note to post
-            n = int(line.strip())
-            notes = self.get_notes()
-            if notes:
-                try:
-                    line = self.read_note(notes[n-1])
-                    print("Using note #%d: %s" % (n, notes[n-1]))
-                except IndexError:
-                    print("Use the 'list notes' command to list valid numbers.")
-                    return
-            else:
-                print("There are no notes to use.")
-                return
-        except ValueError:
-            # in which case we'll simply post the line
-            pass
+        notes = self.get_notes()
+        if line in notes:
+            line = self.read_note(line)
+            print("Using note '%s'" % line)
         self.post = self.home.post(text = line)
         self.post_cache[self.post.id] = self.post
         self.undo.append("delete post %s" % self.post.id)
-        print("Posted. Use the 'show' command to show it.")
+        print("Posted. Use the 'show' command to show it. Use the 'undo' command to undo this.")
 
     def do_delete(self, line):
         """Delete a comment."""
-        words = line.strip().split()
+        words = line.strip().split(maxsplit = 1)
         if words:
             if words[0] == "post":
                 if len(words) > 1:
@@ -523,6 +509,7 @@ Use the 'edit' command to edit notes."""
                 print("Post deleted.")
                 return
             if words[0] == "comment":
+                words = line.strip().split()
                 if len(words) == 4:
                     post = self.post_cache[words[3]]
                     post.delete_comment(words[1])
@@ -557,28 +544,31 @@ Use the 'edit' command to edit notes."""
                     print("delete comment 5")
                     return
             if words[0] == "note":
-                if len(words) != 2:
-                    print("Deleting a note requires a number.")
-                    return
-                try:
-                    n = int(words[1])
-                except ValueError:
-                    print("Deleting a note requires an integer.")
+                if len(words) == 1:
+                    print("Deleting which note?")
                     return
                 notes = self.get_notes()
-                if notes:
-                    try:
-                        os.unlink(self.get_note_path(notes[n-1]))
-                        print("Deleted note #%d: %s" % (n, notes[n-1]))
-                    except IndexError:
-                        print("Use the 'list notes' command to list valid numbers.")
+                if words[1] in notes:
+                    os.unlink(self.get_note_path(words[1]))
+                    print("Deleted note '%s'." % words[1])
                 else:
-                    print("There are no notes to delete.")
+                    print("There is no such note.")
             else:
                 print("Things to delete: post, comment, note.")
                 return
         else:
             print("Delete what?")
+
+    def complete_delete(self, text, line, begidx, endidx):
+        """Complete on actions and names of notes"""
+        if begidx == len("delete "):
+            return [cmd for cmd in ["post", "comment ", "note "] if cmd.startswith(text)]
+        if begidx == len("delete note "):
+            notes = self.get_notes()
+            return [note for note in notes if note.startswith(text)]
+        if begidx == len("delete comment "):
+            numbers = [str(n + 1) for n in range(len(self.post.comments))]
+            return [s for s in numbers if s.startswith(text)]
 
     def do_undo(self, line):
         """Undo an action."""
@@ -599,10 +589,18 @@ Use the 'edit' command to edit notes."""
         if self.editor:
             command = self.editor.split()
             command.append(file)
-            subprocess.run(command)
-            self.onecmd("notes")
+            try:
+                subprocess.run(command)
+                self.onecmd("notes")
+            except FileNotFoundError:
+                print("Could not execute '%s'. Use the 'editor' command to change the editor." % self.editor)
         else:
             print("Use the 'editor' command to set an editor.")
+
+    def complete_edit(self, text, line, begidx, endidx):
+        """Complete on filenames of notes"""
+        notes = self.get_notes()
+        return [note for note in notes if note.startswith(text)]
 
     def do_notes(self, line):
         """List notes"""
@@ -611,8 +609,8 @@ Use the 'edit' command to edit notes."""
             return
         notes = self.get_notes()
         if notes:
-            for n, note in enumerate(notes):
-                print(self.header("%2d. %s") % (n+1, note))
+            for note in notes:
+                print(self.header(note))
             print("Use the 'edit' command to edit a note.")
             print("Use the 'preview' command to look at a note.")
             print("Use the 'post' command to post a note.")
@@ -637,24 +635,18 @@ Use the 'edit' command to edit notes."""
         """Preview a note using your pager.
 Use the 'pager' command to set your pager to something like 'mdcat'."""
         if line == "":
-            print("The 'preview' command the number of a note as an argument.")
+            print("The 'preview' command takes a note as an argument.")
             print("Use the 'notes' command to list all your notes.")
             return
-        try:
-            n = int(line.strip())
-            notes = self.get_notes()
-            if notes:
-                try:
-                    self.show(self.read_note(notes[n-1]))
-                except IndexError:
-                    print("Use the 'list notes' command to list valid numbers.")
-                    return
-            else:
-                print("There are no notes to preview.")
-                return
-        except ValueError:
-            print("The 'preview' command takes a number as its argument.")
-            return
+        notes = self.get_notes()
+        if line in notes:
+            self.show(self.read_note(line))
+        else:
+            print("There is no such note.")
+
+    def complete_preview(self, text, line, begidx, endidx):
+        """Complete on filenames of notes"""
+        return(self.complete_edit(text, line, begidx, endidx))
 
     def do_home(self, line):
         """Show the main stream containing the combined posts of the
