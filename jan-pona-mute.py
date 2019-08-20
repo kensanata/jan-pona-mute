@@ -21,6 +21,7 @@ import shutil
 import cmd
 import sys
 import os
+import re
 
 _RC_PATHS = (
     "~/.config/jan-pona-mute/login",
@@ -116,6 +117,7 @@ class DiasporaClient(cmd.Cmd):
     last_number = None
     post = None
     post_cache = {} # key is self.post.uid, and notification.id
+    last_comments = None
 
     undo = []
 
@@ -416,7 +418,9 @@ or get it from the cache."""
     def do_comments(self, line):
         """Show the comments for the current post.
 Use the 'all' argument to show them all. Use a numerical argument to
-show that many. The default is to load the last five."""
+show that many, e.g. '5' (this is the default). Use a range to show
+those comments, e.g. '1-5'. Use 'previous' to show comments further
+up, use 'next' to show comments further down."""
         if self.post == None:
             print("Use the 'show' command to show a post, first.")
             return
@@ -426,25 +430,43 @@ show that many. The default is to load the last five."""
 
         n = 5
         comments = self.post.comments
+        end = len(comments)
+        start = end - n
 
-        if line == "all":
-            n = None
-        elif line != "":
-            try:
-                n = int(line.strip())
-            except ValueError:
-                print("The 'comments' command takes a number as its argument, or 'all'.")
-                print("The default is to show the last 5 comments.")
-                return
-
-        if n == None:
+        if re.fullmatch('\d+', line):
+            start = end - int(line)
+        elif re.fullmatch('\d+-\d+', line):
+            (start, end) = [int(s)-1 for s in line.split('-')]
+            end += 1
+        elif line == "all":
             start = 0
-        else:
-            # n is from the back
-            start = max(len(comments) - n, 0)
+        elif line == "previous":
+            if self.last_comments != None:
+                n = self.last_comments[1] - self.last_comments[0]
+                (start, end) = [x - n for x in self.last_comments]
+        elif line == "next":
+            if self.last_comments != None:
+                n = self.last_comments[1] - self.last_comments[0]
+                (start, end) = [x + n for x in self.last_comments]
+        elif line != "":
+            print("The 'comments' command takes the following arguments (the default is '5'):")
+            print("- a number, shows this many comments, counting from the end, e.g. 10")
+            print("- a range, shows these comments, counting from the start, e.g. 1-5")
+            print("- 'all' shows all the comments")
+            return
+
+        # set window if reasonable
+        if end > 0 and start < len(comments):
+            self.last_comments = [start, end]
+
+        # sanity check to avoid index errors
+        start = max(start, 0)
+        start = min(start, len(comments))
+        end = max(end, start)
+        end = min(end, len(comments))
 
         if comments:
-            for n, comment in enumerate(comments[start:], start):
+            for n, comment in enumerate(comments[start:end], start):
                 print()
                 print(self.header("%2d. %s %s") % (n+1, comment.when(), comment.author()))
                 print()
@@ -453,6 +475,17 @@ show that many. The default is to load the last five."""
         else:
             print("There are no comments on the selected post.")
         print("Use the 'comment' command to post a comment.")
+
+    def complete_comments(self, text, line, begidx, endidx):
+        """Complete comments"""
+        match = re.fullmatch("comments (\d+)-\d*", line)
+        if (match):
+            start = int(match.group(1))
+            completions = [str(n + 1) for n in range(len(self.post.comments)) if n >= start]
+            return [s for s in completions if s.startswith(text)]
+        completions = ["all", "next", "previous"]
+        completions.extend([str(n + 1) for n in range(len(self.post.comments))])
+        return [s for s in completions if s.startswith(text)]
 
     def do_comment(self, line):
         """Leave a comment on the current post.
@@ -517,7 +550,7 @@ Use the 'edit' command to edit notes."""
                 if len(words) == 4:
                     post = self.post_cache[words[3]]
                     post.delete_comment(words[1])
-                    comments = [c.id for c in post.comments if c.id != id]
+                    comments = [c.id for c in post.comments if c.id != words[1]]
                     post.comments = diaspy.models.Comments(comments)
                     print("Comment deleted.")
                     return
